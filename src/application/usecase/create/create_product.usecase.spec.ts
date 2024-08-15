@@ -1,4 +1,5 @@
 import { ICreateProductRepository } from '@/application/protocol/reposirory/create_product.interface.repository';
+import { ICreateProductUsecase } from '@/application/protocol/usecase/create_product.interface.usecase';
 import { faker } from '@faker-js/faker';
 import { CreateProductUseCase } from '.';
 
@@ -9,7 +10,7 @@ describe('Create Product', () => {
     quantity: faker.number.int({ min: 0, max: 100 }),
   };
   let repository: ICreateProductRepository;
-  let sut: CreateProductUseCase;
+  let sut: ICreateProductUsecase;
   beforeAll(() => {
     repository = {
       create: jest.fn(),
