@@ -1,0 +1,28 @@
+name: Continuos Integration
+
+on:
+    push:
+        branches:
+            ['feature/*']
+jobs:
+
+  continiuos-integration:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Instalar Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: 18.x
+
+    - name: Instalar dependencias
+      run: yarn
+
+    - name: Build
+      run: yarn build
+
+    - name: Testes unitarios
+      run: yarn test:cov
