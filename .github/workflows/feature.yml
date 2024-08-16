@@ -25,4 +25,6 @@ jobs:
       run: yarn build
 
     - name: Testes unitarios
+      env:
+        DATABASE_URL: postgresql://${{ secrets.OWNER}}:${{ secrets.PASSWORD }}@ep-jolly-resonance-a6b84g01.us-west-2.aws.neon.tech/teste?sslmode=require
       run: yarn test:cov
