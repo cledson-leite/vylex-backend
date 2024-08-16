@@ -1,8 +1,8 @@
 import { IListProductsRepository } from '@/application/protocol/reposirory/list_products.interface.repository';
+import { IListProductsUsecase } from '@/application/protocol/usecase/list_products.interface.usecase';
 import { PaginationDto, ResponseDto } from '@/shared/dto';
 import { faker } from '@faker-js/faker';
 import { ListProductsUseCase } from '.';
-import { IListProductsUsecase } from '@/application/protocol/usecase/list_products.interface.usecase';
 
 describe('List Products Use Case', () => {
   const dto: PaginationDto = {
