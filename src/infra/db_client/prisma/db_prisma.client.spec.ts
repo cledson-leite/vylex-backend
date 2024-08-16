@@ -18,16 +18,17 @@ describe('Db Prisma Client', () => {
       providers: [
         DbPrismaClient,
         {
-          provide: 'dbPrismaClient',
+          provide: 'prisma',
           useValue: {
             product: {
               create: jest.fn(),
+              save: jest.fn(),
             },
           },
         },
       ],
     }).compile();
-    prisma = module.get<PrismaService>('dbPrismaClient');
+    prisma = module.get<PrismaService>('prisma');
     sut = module.get<DbPrismaClient>(DbPrismaClient);
   });
   it('should call the create method with the correct data', async () => {

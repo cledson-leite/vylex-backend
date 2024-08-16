@@ -5,9 +5,7 @@ import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
 export class DbPrismaClient implements ICreateProductClient {
-  constructor(
-    @Inject('dbPrismaClient') private readonly prisma: PrismaService,
-  ) {}
+  constructor(@Inject('prisma') private readonly prisma: PrismaService) {}
   async save(dto: CreateDto): Promise<void> {
     await this.prisma.product.create({ data: dto });
   }
