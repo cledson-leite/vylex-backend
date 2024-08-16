@@ -1,18 +1,17 @@
 version: '3.8'
 
 services:
-  mongodb:
-    image: mongo:5.0.15
-    container_name: mongodb
-    ports:
-      - "27017:27017"
+  postgres:
+    image: postgres:latest
+    container_name: my_postgres
     environment:
-      MONGO_INITDB_ROOT_USERNAME: vylex
-      MONGO_INITDB_ROOT_PASSWORD: cledsonLeite
-      MONGO_INITDB_DATABASE: vylex
+      POSTGRES_USER: vylex
+      POSTGRES_PASSWORD: cledsonLeite
+      POSTGRES_DB: vylex
+    ports:
+      - "5432:5432"
     volumes:
-      - mongo_data:/data/db
-    command: ["mongod", "--auth"]
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  mongo_data:
+  postgres_data:

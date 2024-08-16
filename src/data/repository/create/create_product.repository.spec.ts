@@ -1,5 +1,5 @@
 import { ICreateProductRepository } from '@/application/protocol/reposirory/create_product.interface.repository';
-import { IProductClient } from '@/data/source/product_client.interface..source';
+import { ICreateProductClient } from '@/data/source/create_product_client.interface..source';
 import { faker } from '@faker-js/faker';
 import { CreateProductRepository } from '.';
 describe('Create Product Repository', () => {
@@ -8,7 +8,7 @@ describe('Create Product Repository', () => {
     price: Number(faker.commerce.price()),
     quantity: faker.number.int({ min: 0, max: 100 }),
   };
-  let source: IProductClient;
+  let source: ICreateProductClient;
   let sut: ICreateProductRepository;
 
   beforeAll(() => {
