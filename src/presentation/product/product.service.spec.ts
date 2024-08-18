@@ -1,5 +1,6 @@
 import { ICreateProductUsecase } from '@/application/protocol/usecase/create_product.interface.usecase';
 import { IListProductsUsecase } from '@/application/protocol/usecase/list_products.interface.usecase';
+import { IShowProductUseCase } from '@/application/protocol/usecase/show_product.interface.usecase';
 import { CreateDto, PaginationDto, ResponseDto } from '@/shared/dto';
 import { faker } from '@faker-js/faker';
 import { Test, TestingModule } from '@nestjs/testing';
@@ -8,6 +9,7 @@ import { ProductService } from './product.service';
 describe('Product Service', () => {
   let create: ICreateProductUsecase;
   let list: IListProductsUsecase;
+  let show: IShowProductUseCase;
   let sut: ProductService;
 
   beforeEach(async () => {
@@ -26,10 +28,17 @@ describe('Product Service', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: 'ShowProductUseCase',
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
     create = module.get<ICreateProductUsecase>('CreateProductUseCase');
     list = module.get<IListProductsUsecase>('ListProductUseCase');
+    show = module.get<IShowProductUseCase>('ShowProductUseCase');
     sut = module.get<ProductService>(ProductService);
   });
 
@@ -98,6 +107,32 @@ describe('Product Service', () => {
       };
       jest.spyOn(list, 'execute').mockResolvedValueOnce(response);
       const output = await sut.list(dto);
+      expect(output).toEqual(response);
+    });
+  });
+  describe('Show', () => {
+    const name: string = faker.commerce.productName();
+    it('should call the show method of the use case', async () => {
+      sut.show(name);
+      expect(show.execute).toHaveBeenCalledWith(name);
+    });
+    it('should throw error received from show use case', async () => {
+      jest.spyOn(show, 'execute').mockRejectedValueOnce(new Error('Error'));
+      const promise = sut.show(name);
+      await expect(promise).rejects.toThrow();
+    });
+    it('should return a product', async () => {
+      const response = {
+        item: [
+          {
+            name,
+            price: Number(faker.commerce.price()),
+            quantity: faker.number.int({ min: 0, max: 100 }),
+          },
+        ],
+      };
+      jest.spyOn(list, 'execute').mockResolvedValueOnce(response);
+      const output = await sut.list();
       expect(output).toEqual(response);
     });
   });

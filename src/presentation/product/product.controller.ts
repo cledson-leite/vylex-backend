@@ -1,6 +1,6 @@
 import { CreateDto, PaginationDto } from '@/shared/dto';
 import { ParamNotFound } from '@/shared/errors';
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ProductService } from './product.service';
 
 @Controller('product')
@@ -16,8 +16,20 @@ export class ProductController {
   }
 
   @Get()
-  async list(@Query() dto?: PaginationDto) {
-    if (!dto) return this.service.list();
+  async list(@Query() queries?: PaginationDto) {
+    if (!queries) return this.service.list();
+    const dto = {
+      page: Number(queries.page),
+      limit: Number(queries.limit),
+    };
     return this.service.list(dto);
+  }
+
+  @Get('/:name')
+  async show(@Param('name') name: string) {
+    if (!name) {
+      throw new ParamNotFound();
+    }
+    return this.service.show(name);
   }
 }

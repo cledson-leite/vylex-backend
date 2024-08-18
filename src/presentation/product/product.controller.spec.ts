@@ -1,7 +1,9 @@
 import { CreateProductUseCase } from '@/application/usecase/create';
 import { ListProductsUseCase } from '@/application/usecase/list';
+import { ShowProductUseCase } from '@/application/usecase/show';
 import { CreateProductRepository } from '@/data/repository/create';
 import { ListProductRepository } from '@/data/repository/list';
+import { ShowProductRepository } from '@/data/repository/show';
 import { DbPrismaClient } from '@/infra/db_client/prisma';
 import { PaginationDto } from '@/shared/dto';
 import { ParamNotFound } from '@/shared/errors';
@@ -30,6 +32,11 @@ describe('ProductController', () => {
           useClass: DbPrismaClient,
         },
         {
+          provide: 'ShowRepository',
+          useFactory: client => new ShowProductRepository(client),
+          inject: ['db'],
+        },
+        {
           provide: 'ListRepository',
           useFactory: client => new ListProductRepository(client),
           inject: ['db'],
@@ -38,6 +45,11 @@ describe('ProductController', () => {
           provide: 'CreateRepository',
           useFactory: client => new CreateProductRepository(client),
           inject: ['db'],
+        },
+        {
+          provide: 'ShowProductUseCase',
+          useFactory: repository => new ShowProductUseCase(repository),
+          inject: ['ShowRepository'],
         },
         {
           provide: 'ListProductUseCase',
@@ -131,6 +143,38 @@ describe('ProductController', () => {
       };
       jest.spyOn(service, 'list').mockResolvedValueOnce(response);
       const output = await sut.list(params);
+      expect(output).toEqual(response);
+    });
+  });
+  describe('Show', () => {
+    const name: string = faker.commerce.productName();
+    it('should call the show method of the service with correct parameter', async () => {
+      const ShowSpy = jest.spyOn(service, 'show');
+      await sut.show(name);
+      expect(ShowSpy).toHaveBeenCalledWith(name);
+    });
+    it('should throw Parameter not found error if it is not passed', async () => {
+      const promise = sut.show('');
+      await expect(promise).rejects.toThrow(new ParamNotFound());
+    });
+    it('should throw error received from service', async () => {
+      jest.spyOn(service, 'show').mockRejectedValueOnce(new Error('Error'));
+
+      const promise = sut.show(name);
+      await expect(promise).rejects.toThrow();
+    });
+    it('should return a products', async () => {
+      const response = {
+        item: [
+          {
+            name,
+            price: Number(faker.commerce.price()),
+            quantity: faker.number.int({ min: 0, max: 100 }),
+          },
+        ],
+      };
+      jest.spyOn(service, 'show').mockResolvedValueOnce(response);
+      const output = await sut.show(name);
       expect(output).toEqual(response);
     });
   });

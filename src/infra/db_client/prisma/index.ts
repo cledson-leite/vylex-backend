@@ -23,10 +23,7 @@ export class DbPrismaClient implements ICreateProductClient {
         skip,
         take,
       }),
-      this.prisma.product.count({
-        skip,
-        take,
-      }),
+      this.prisma.product.count(),
     ]);
     const { item } = this.fromResponse(items);
     return {
@@ -42,7 +39,15 @@ export class DbPrismaClient implements ICreateProductClient {
   }
   async get(name: string): Promise<ResponseDto> {
     const response = await this.prisma.product.findUnique({ where: { name } });
-    return this.fromResponse(response) as ResponseDto;
+    return {
+      item: [
+        {
+          name: response.name,
+          price: response.price,
+          quantity: response.quantity,
+        },
+      ],
+    };
   }
   private fromResponse(response: any) {
     if (!response || !response.length) return {};
