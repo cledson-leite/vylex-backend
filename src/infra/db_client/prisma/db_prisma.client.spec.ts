@@ -134,7 +134,7 @@ describe('Db Prisma Client', () => {
     it('should return a product', async () => {
       jest
         .spyOn(prisma.product, 'findUnique')
-        .mockResolvedValueOnce(response.item as any);
+        .mockResolvedValueOnce(response.item[0] as any);
       const output = await sut.get(name);
       expect(output).toEqual(response);
     });
