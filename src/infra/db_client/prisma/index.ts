@@ -1,6 +1,6 @@
 import { ICreateProductClient } from '@/data/source/create_product_client.interface..source';
 import { PrismaService } from '@/presentation/prisma/prisma.service';
-import { CreateDto, PaginationDto, ResponseDto } from '@/shared/dto';
+import { CreateDto, PaginationDto, ResponseDto, UpdateDto } from '@/shared/dto';
 import { Inject, Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -49,6 +49,13 @@ export class DbPrismaClient implements ICreateProductClient {
         },
       ],
     };
+  }
+
+  async update(dto: UpdateDto): Promise<void> {
+    await this.prisma.product.update({
+      where: { name: dto.name },
+      data: { [dto.proprity]: dto.value },
+    });
   }
   private fromResponse(response: any) {
     if (!response || !response.length) return {};
