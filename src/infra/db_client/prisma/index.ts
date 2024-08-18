@@ -40,6 +40,10 @@ export class DbPrismaClient implements ICreateProductClient {
       },
     };
   }
+  async get(name: string): Promise<ResponseDto> {
+    const response = await this.prisma.product.findUnique({ where: { name } });
+    return this.fromResponse(response) as ResponseDto;
+  }
   private fromResponse(response: any) {
     if (!response || !response.length) return {};
     return {

@@ -24,6 +24,7 @@ describe('Db Prisma Client', () => {
               create: jest.fn(),
               findMany: jest.fn(),
               count: jest.fn(),
+              findUnique: jest.fn(),
             },
           },
         },
@@ -70,7 +71,7 @@ describe('Db Prisma Client', () => {
         currentPage: dto.page,
       },
     };
-    it('implement call the find all method without parameter', async () => {
+    it('should call the find all method without parameter', async () => {
       sut.getAll();
       expect(prisma.product.findMany).toHaveBeenCalledWith();
     });
@@ -100,6 +101,42 @@ describe('Db Prisma Client', () => {
       jest.spyOn(prisma.product, 'count').mockResolvedValueOnce(total);
       const result = await sut.getAll(dto);
       expect(result).toEqual(response);
+    });
+  });
+  describe('Find', () => {
+    const name: string = faker.commerce.productName();
+    const response: ResponseDto = {
+      item: [
+        {
+          name,
+          price: Number(faker.commerce.price()),
+          quantity: faker.number.int({ min: 0, max: 100 }),
+        },
+      ],
+    };
+    it('should call the find method with correct parameter', async () => {
+      sut.get(name);
+      expect(prisma.product.findUnique).toHaveBeenCalledWith({
+        where: { name },
+      });
+    });
+    it('should throw error received from client', async () => {
+      jest
+        .spyOn(prisma.product, 'findUnique')
+        .mockRejectedValueOnce(new Error('Error'));
+      await expect(sut.get(name)).rejects.toThrow();
+    });
+    it('should return an empty array', async () => {
+      jest.spyOn(prisma.product, 'findUnique').mockResolvedValueOnce(null);
+      const output = await sut.get(name);
+      expect(output).toEqual({});
+    });
+    it('should return a product', async () => {
+      jest
+        .spyOn(prisma.product, 'findUnique')
+        .mockResolvedValueOnce(response.item as any);
+      const output = await sut.get(name);
+      expect(output).toEqual(response);
     });
   });
 });
