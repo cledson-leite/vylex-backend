@@ -26,6 +26,7 @@ describe('Db Prisma Client', () => {
               count: jest.fn(),
               findUnique: jest.fn(),
               update: jest.fn(),
+              delete: jest.fn(),
             },
           },
         },
@@ -159,6 +160,21 @@ describe('Db Prisma Client', () => {
         .spyOn(prisma.product, 'update')
         .mockRejectedValueOnce(new Error('Error'));
       await expect(sut.update(dto)).rejects.toThrow();
+    });
+  });
+  describe('Delete', () => {
+    const name: string = faker.commerce.productName();
+    it('should call the delete method with correct parameter', async () => {
+      await sut.delete(name);
+      expect(prisma.product.delete).toHaveBeenCalledWith({
+        where: { name },
+      });
+    });
+    it('should throw error received from delete', async () => {
+      jest
+        .spyOn(prisma.product, 'delete')
+        .mockRejectedValueOnce(new Error('Error'));
+      await expect(sut.delete(name)).rejects.toThrow();
     });
   });
 });
