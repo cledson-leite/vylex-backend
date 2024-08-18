@@ -1,5 +1,5 @@
 import { PrismaService } from '@/presentation/prisma/prisma.service';
-import { PaginationDto, ResponseDto } from '@/shared/dto';
+import { PaginationDto, ResponseDto, UpdateDto } from '@/shared/dto';
 import { faker } from '@faker-js/faker';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DbPrismaClient } from '.';
@@ -25,6 +25,7 @@ describe('Db Prisma Client', () => {
               findMany: jest.fn(),
               count: jest.fn(),
               findUnique: jest.fn(),
+              update: jest.fn(),
             },
           },
         },
@@ -137,6 +138,27 @@ describe('Db Prisma Client', () => {
         .mockResolvedValueOnce(response.item[0] as any);
       const output = await sut.get(name);
       expect(output).toEqual(response);
+    });
+  });
+  describe('Update', () => {
+    const dto: UpdateDto = {
+      name: faker.commerce.productName(),
+      proprity: 'price',
+      value: Number(faker.commerce.price()),
+    };
+    const data = { [dto.proprity]: dto.value };
+    it('should call the update method with correct parameter', async () => {
+      await sut.update(dto);
+      expect(prisma.product.update).toHaveBeenCalledWith({
+        where: { name: dto.name },
+        data,
+      });
+    });
+    it('should throw error received from update', async () => {
+      jest
+        .spyOn(prisma.product, 'update')
+        .mockRejectedValueOnce(new Error('Error'));
+      await expect(sut.update(dto)).rejects.toThrow();
     });
   });
 });

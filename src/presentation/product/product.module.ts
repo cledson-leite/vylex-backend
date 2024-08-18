@@ -1,9 +1,11 @@
 import { CreateProductUseCase } from '@/application/usecase/create';
 import { ListProductsUseCase } from '@/application/usecase/list';
 import { ShowProductUseCase } from '@/application/usecase/show';
+import { UpdateProductUseCase } from '@/application/usecase/update';
 import { CreateProductRepository } from '@/data/repository/create';
 import { ListProductRepository } from '@/data/repository/list';
 import { ShowProductRepository } from '@/data/repository/show';
+import { UpdateProductRepository } from '@/data/repository/update';
 import { DbPrismaClient } from '@/infra/db_client/prisma';
 import { Module } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -23,6 +25,11 @@ import { ProductService } from './product.service';
       useClass: DbPrismaClient,
     },
     {
+      provide: 'UpdateRepository',
+      useFactory: client => new UpdateProductRepository(client),
+      inject: ['db'],
+    },
+    {
       provide: 'ShowRepository',
       useFactory: client => new ShowProductRepository(client),
       inject: ['db'],
@@ -36,6 +43,11 @@ import { ProductService } from './product.service';
       provide: 'CreateRepository',
       useFactory: client => new CreateProductRepository(client),
       inject: ['db'],
+    },
+    {
+      provide: 'UpdateProductUseCase',
+      useFactory: repository => new UpdateProductUseCase(repository),
+      inject: ['UpdateRepository'],
     },
     {
       provide: 'ShowProductUseCase',

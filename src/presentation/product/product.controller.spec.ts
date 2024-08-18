@@ -1,9 +1,11 @@
 import { CreateProductUseCase } from '@/application/usecase/create';
 import { ListProductsUseCase } from '@/application/usecase/list';
 import { ShowProductUseCase } from '@/application/usecase/show';
+import { UpdateProductUseCase } from '@/application/usecase/update';
 import { CreateProductRepository } from '@/data/repository/create';
 import { ListProductRepository } from '@/data/repository/list';
 import { ShowProductRepository } from '@/data/repository/show';
+import { UpdateProductRepository } from '@/data/repository/update';
 import { DbPrismaClient } from '@/infra/db_client/prisma';
 import { PaginationDto } from '@/shared/dto';
 import { ParamNotFound } from '@/shared/errors';
@@ -32,6 +34,11 @@ describe('ProductController', () => {
           useClass: DbPrismaClient,
         },
         {
+          provide: 'UpdateRepository',
+          useFactory: client => new UpdateProductRepository(client),
+          inject: ['db'],
+        },
+        {
           provide: 'ShowRepository',
           useFactory: client => new ShowProductRepository(client),
           inject: ['db'],
@@ -45,6 +52,11 @@ describe('ProductController', () => {
           provide: 'CreateRepository',
           useFactory: client => new CreateProductRepository(client),
           inject: ['db'],
+        },
+        {
+          provide: 'UpdateProductUseCase',
+          useFactory: repository => new UpdateProductUseCase(repository),
+          inject: ['UpdateRepository'],
         },
         {
           provide: 'ShowProductUseCase',
@@ -176,6 +188,29 @@ describe('ProductController', () => {
       jest.spyOn(service, 'show').mockResolvedValueOnce(response);
       const output = await sut.show(name);
       expect(output).toEqual(response);
+    });
+  });
+  describe('Update', () => {
+    const params = {
+      name: faker.commerce.productName(),
+      proprity: 'price',
+      value: Number(faker.commerce.price()),
+    };
+    it('should call the update method of the service with correct parameter', async () => {
+      const updateSpy = jest.spyOn(service, 'update');
+      await sut.update(params.name, params);
+      expect(updateSpy).toHaveBeenCalledWith(params);
+    });
+    it('should throw Parameter not found error if name is not passed', async () => {
+      const promise = sut.update('', params);
+      await expect(promise).rejects.toThrow(new ParamNotFound());
+    });
+    it('should throw Parameter not found error if params is not passed', async () => {
+      const promise = sut.update(params.name, {} as any);
+      await expect(promise).rejects.toThrow(new ParamNotFound());
+    });
+    it('should throw error received from service', async () => {
+      jest.spyOn(service, 'update').mockRejectedValueOnce(new Error('Error'));
     });
   });
 });

@@ -1,7 +1,8 @@
 import { ICreateProductUsecase } from '@/application/protocol/usecase/create_product.interface.usecase';
 import { IListProductsUsecase } from '@/application/protocol/usecase/list_products.interface.usecase';
 import { IShowProductUseCase } from '@/application/protocol/usecase/show_product.interface.usecase';
-import { CreateDto, PaginationDto, ResponseDto } from '@/shared/dto';
+import { IUpdateProductUseCase } from '@/application/protocol/usecase/update_product.interface.usecase';
+import { CreateDto, PaginationDto, ResponseDto, UpdateDto } from '@/shared/dto';
 import { faker } from '@faker-js/faker';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProductService } from './product.service';
@@ -10,6 +11,7 @@ describe('Product Service', () => {
   let create: ICreateProductUsecase;
   let list: IListProductsUsecase;
   let show: IShowProductUseCase;
+  let update: IUpdateProductUseCase;
   let sut: ProductService;
 
   beforeEach(async () => {
@@ -34,11 +36,18 @@ describe('Product Service', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: 'UpdateProductUseCase',
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
     create = module.get<ICreateProductUsecase>('CreateProductUseCase');
     list = module.get<IListProductsUsecase>('ListProductUseCase');
     show = module.get<IShowProductUseCase>('ShowProductUseCase');
+    update = module.get<IUpdateProductUseCase>('UpdateProductUseCase');
     sut = module.get<ProductService>(ProductService);
   });
 
@@ -134,6 +143,22 @@ describe('Product Service', () => {
       jest.spyOn(list, 'execute').mockResolvedValueOnce(response);
       const output = await sut.list();
       expect(output).toEqual(response);
+    });
+  });
+  describe('Update', () => {
+    const dto: UpdateDto = {
+      name: faker.commerce.productName(),
+      proprity: 'price',
+      value: Number(faker.commerce.price()),
+    };
+    it('should call the update method of the use case', async () => {
+      sut.update(dto);
+      expect(update.execute).toHaveBeenCalledWith(dto);
+    });
+    it('should throw error received from update use case', async () => {
+      jest.spyOn(update, 'execute').mockRejectedValueOnce(new Error('Error'));
+      const promise = sut.update(dto);
+      await expect(promise).rejects.toThrow();
     });
   });
 });

@@ -3,6 +3,11 @@ export interface CreateDto {
   quantity: number;
   price: number;
 }
+export interface UpdateDto {
+  name: string;
+  proprity: string;
+  value: any;
+}
 export interface MetaDto {
   totalItems: number;
   itemCount: number;
