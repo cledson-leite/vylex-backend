@@ -73,8 +73,6 @@
       "!main.(t|j)s",
       "!app.module.(t|j)s",
       "!**/**/**/*.module.(t|j)s",
-      "!**/**/**/*.controller.(t|j)s",
-      "!**/**/**/*.controller.test.(t|j)s",
       "!**/**/prisma.*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",

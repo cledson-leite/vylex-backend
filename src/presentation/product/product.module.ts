@@ -1,8 +1,10 @@
 import { CreateProductUseCase } from '@/application/usecase/create';
+import { DeleteProductUseCase } from '@/application/usecase/delete';
 import { ListProductsUseCase } from '@/application/usecase/list';
 import { ShowProductUseCase } from '@/application/usecase/show';
 import { UpdateProductUseCase } from '@/application/usecase/update';
 import { CreateProductRepository } from '@/data/repository/create';
+import { DeleteProductRepository } from '@/data/repository/delete';
 import { ListProductRepository } from '@/data/repository/list';
 import { ShowProductRepository } from '@/data/repository/show';
 import { UpdateProductRepository } from '@/data/repository/update';
@@ -25,6 +27,11 @@ import { ProductService } from './product.service';
       useClass: DbPrismaClient,
     },
     {
+      provide: 'DeleteRepository',
+      useFactory: client => new DeleteProductRepository(client),
+      inject: ['db'],
+    },
+    {
       provide: 'UpdateRepository',
       useFactory: client => new UpdateProductRepository(client),
       inject: ['db'],
@@ -43,6 +50,11 @@ import { ProductService } from './product.service';
       provide: 'CreateRepository',
       useFactory: client => new CreateProductRepository(client),
       inject: ['db'],
+    },
+    {
+      provide: 'DeleteProductUseCase',
+      useFactory: repository => new DeleteProductUseCase(repository),
+      inject: ['DeleteRepository'],
     },
     {
       provide: 'UpdateProductUseCase',

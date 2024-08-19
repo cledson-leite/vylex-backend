@@ -13,6 +13,6 @@ export class UpdateProductUseCase implements IUpdateProductUseCase {
     if (!proprities.includes(proprity)) {
       throw new Error('Parameter not found');
     }
-    this.repository.update(dto);
+    await this.repository.update(dto);
   }
 }

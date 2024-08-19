@@ -1,4 +1,5 @@
 import { ICreateProductUsecase } from '@/application/protocol/usecase/create_product.interface.usecase';
+import { IDeleteProductUseCase } from '@/application/protocol/usecase/delete_product.interface.usecase';
 import { IListProductsUsecase } from '@/application/protocol/usecase/list_products.interface.usecase';
 import { IShowProductUseCase } from '@/application/protocol/usecase/show_product.interface.usecase';
 import { IUpdateProductUseCase } from '@/application/protocol/usecase/update_product.interface.usecase';
@@ -17,6 +18,8 @@ export class ProductService {
     private readonly showUsecase: IShowProductUseCase,
     @Inject('UpdateProductUseCase')
     private readonly updateUsecase: IUpdateProductUseCase,
+    @Inject('DeleteProductUseCase')
+    private readonly deleteUsecase: IDeleteProductUseCase,
   ) {}
   async create(dto: CreateDto): Promise<void> {
     return this.createUsecase.execute(dto);
@@ -32,6 +35,9 @@ export class ProductService {
   }
 
   async update(dto: UpdateDto): Promise<void> {
-    return this.updateUsecase.execute(dto);
+    await this.updateUsecase.execute(dto);
+  }
+  async delete(name: string): Promise<void> {
+    await this.deleteUsecase.execute(name);
   }
 }

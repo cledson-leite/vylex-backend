@@ -57,6 +57,10 @@ export class DbPrismaClient implements ICreateProductClient {
       data: { [dto.proprity]: dto.value },
     });
   }
+
+  async delete(name: string): Promise<void> {
+    await this.prisma.product.delete({ where: { name } });
+  }
   private fromResponse(response: any) {
     if (!response || !response.length) return {};
     return {
