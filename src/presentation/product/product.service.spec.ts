@@ -1,4 +1,5 @@
 import { ICreateProductUsecase } from '@/application/protocol/usecase/create_product.interface.usecase';
+import { IDeleteProductUseCase } from '@/application/protocol/usecase/delete_product.interface.usecase';
 import { IListProductsUsecase } from '@/application/protocol/usecase/list_products.interface.usecase';
 import { IShowProductUseCase } from '@/application/protocol/usecase/show_product.interface.usecase';
 import { IUpdateProductUseCase } from '@/application/protocol/usecase/update_product.interface.usecase';
@@ -12,6 +13,7 @@ describe('Product Service', () => {
   let list: IListProductsUsecase;
   let show: IShowProductUseCase;
   let update: IUpdateProductUseCase;
+  let deleteService: IDeleteProductUseCase;
   let sut: ProductService;
 
   beforeEach(async () => {
@@ -42,12 +44,19 @@ describe('Product Service', () => {
             execute: jest.fn(),
           },
         },
+        {
+          provide: 'DeleteProductUseCase',
+          useValue: {
+            execute: jest.fn(),
+          },
+        },
       ],
     }).compile();
     create = module.get<ICreateProductUsecase>('CreateProductUseCase');
     list = module.get<IListProductsUsecase>('ListProductUseCase');
     show = module.get<IShowProductUseCase>('ShowProductUseCase');
     update = module.get<IUpdateProductUseCase>('UpdateProductUseCase');
+    deleteService = module.get<IDeleteProductUseCase>('DeleteProductUseCase');
     sut = module.get<ProductService>(ProductService);
   });
 
@@ -158,6 +167,20 @@ describe('Product Service', () => {
     it('should throw error received from update use case', async () => {
       jest.spyOn(update, 'execute').mockRejectedValueOnce(new Error('Error'));
       const promise = sut.update(dto);
+      expect(() => promise).rejects.toThrow();
+    });
+  });
+  describe('Delete', () => {
+    const name: string = faker.commerce.productName();
+    it('should call the delete method of the use case', async () => {
+      sut.delete(name);
+      expect(deleteService.execute).toHaveBeenCalledWith(name);
+    });
+    it('should throw error received from delete use case', async () => {
+      jest
+        .spyOn(deleteService, 'execute')
+        .mockRejectedValueOnce(new Error('Error'));
+      const promise = sut.delete(name);
       await expect(promise).rejects.toThrow();
     });
   });

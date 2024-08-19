@@ -1,47 +1,101 @@
 import { CreateDto, PaginationDto, UpdateDto } from '@/shared/dto';
-import { ParamNotFound } from '@/shared/errors';
-import { Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Res,
+} from '@nestjs/common';
+import { Response } from 'express';
 import { ProductService } from './product.service';
 
 @Controller('product')
 export class ProductController {
   constructor(private readonly service: ProductService) {}
   @Post()
-  async create(@Body() params: CreateDto) {
+  async create(@Body() params: CreateDto, @Res() response: Response) {
     const { name, price, quantity } = params;
     if (!name || !price || !quantity) {
-      throw new ParamNotFound();
+      return response.status(400).send({ message: 'Parameter not found' });
     }
-    return this.service.create(params);
+    try {
+      await this.service.create(params);
+      return response.status(204).send();
+    } catch (error) {
+      return response.status(500).send({ message: error.message });
+    }
   }
 
   @Get()
-  async list(@Query() queries?: PaginationDto) {
-    if (!queries) return this.service.list();
-    const dto = {
-      page: Number(queries.page),
-      limit: Number(queries.limit),
-    };
-    return this.service.list(dto);
+  async list(@Res() response: Response, @Query() queries?: PaginationDto) {
+    try {
+      if (!queries) {
+        const products = await this.service.list();
+        return response.status(200).send(products);
+      }
+      const dto = {
+        page: Number(queries.page),
+        limit: Number(queries.limit),
+      };
+
+      const products = await this.service.list(dto);
+      return response.status(200).send(products);
+    } catch (error) {
+      return response.status(500).send({ message: error.message });
+    }
   }
 
   @Get('/:name')
-  async show(@Param('name') name: string) {
+  async show(@Param('name') name: string, @Res() response: Response) {
     if (!name) {
-      throw new ParamNotFound();
+      return response.status(400).send({ message: 'Parameter not found' });
     }
-    return this.service.show(name);
+    try {
+      const product = await this.service.show(name);
+      return response.status(200).send(product);
+    } catch (error) {
+      return response.status(500).send({ message: error.message });
+    }
   }
 
   @Put('/:name')
-  async update(@Param('name') name: string, @Body() params: UpdateDto) {
+  async update(
+    @Param('name') name: string,
+    @Body() params: UpdateDto,
+    @Res() response: Response,
+  ) {
     if (!name) {
-      throw new ParamNotFound();
+      return response.status(400).send({ message: 'Parameter not found' });
     }
     const dto = {
       ...params,
       name,
     };
-    return this.service.update(dto);
+    if (!dto.proprity || !dto.value) {
+      return response.status(400).send({ message: 'Parameter not found' });
+    }
+    try {
+      await this.service.update(dto);
+      return response.status(200).send();
+    } catch (error) {
+      return response.status(500).send({ message: error.message });
+    }
+  }
+
+  @Delete('/:name')
+  async delete(@Param('name') name: string, @Res() response: Response) {
+    if (!name) {
+      return response.status(400).send({ message: 'Parameter not found' });
+    }
+    try {
+      await this.service.delete(name);
+      return response.status(200).send();
+    } catch (error) {
+      return response.status(500).send({ message: error.message });
+    }
   }
 }

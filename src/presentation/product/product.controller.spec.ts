@@ -1,22 +1,25 @@
 import { CreateProductUseCase } from '@/application/usecase/create';
+import { DeleteProductUseCase } from '@/application/usecase/delete';
 import { ListProductsUseCase } from '@/application/usecase/list';
 import { ShowProductUseCase } from '@/application/usecase/show';
 import { UpdateProductUseCase } from '@/application/usecase/update';
 import { CreateProductRepository } from '@/data/repository/create';
+import { DeleteProductRepository } from '@/data/repository/delete';
 import { ListProductRepository } from '@/data/repository/list';
 import { ShowProductRepository } from '@/data/repository/show';
 import { UpdateProductRepository } from '@/data/repository/update';
 import { DbPrismaClient } from '@/infra/db_client/prisma';
 import { PaginationDto } from '@/shared/dto';
-import { ParamNotFound } from '@/shared/errors';
 import { faker } from '@faker-js/faker';
 import { Test, TestingModule } from '@nestjs/testing';
+import { Response } from 'express';
 import { PrismaModule } from '../prisma/prisma.module';
 import { PrismaService } from '../prisma/prisma.service';
 import { ProductController } from './product.controller';
 import { ProductService } from './product.service';
 
 describe('ProductController', () => {
+  let response: Response;
   let sut: ProductController;
   let service: ProductService;
   beforeEach(async () => {
@@ -32,6 +35,11 @@ describe('ProductController', () => {
         {
           provide: 'db',
           useClass: DbPrismaClient,
+        },
+        {
+          provide: 'DeleteRepository',
+          useFactory: client => new DeleteProductRepository(client),
+          inject: ['db'],
         },
         {
           provide: 'UpdateRepository',
@@ -52,6 +60,11 @@ describe('ProductController', () => {
           provide: 'CreateRepository',
           useFactory: client => new CreateProductRepository(client),
           inject: ['db'],
+        },
+        {
+          provide: 'DeleteProductUseCase',
+          useFactory: repository => new DeleteProductUseCase(repository),
+          inject: ['DeleteRepository'],
         },
         {
           provide: 'UpdateProductUseCase',
@@ -78,29 +91,44 @@ describe('ProductController', () => {
 
     sut = module.get<ProductController>(ProductController);
     service = module.get<ProductService>(ProductService);
+    response = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    } as any;
     jest.clearAllMocks();
   });
 
   describe('Create', () => {
+    const params = {
+      name: faker.commerce.productName(),
+      price: Number(faker.commerce.price()),
+      quantity: faker.number.int({ min: 0, max: 100 }),
+    };
     it('should call the create method of the service with correct parameter', async () => {
-      const params = {
-        name: faker.commerce.productName(),
-        price: Number(faker.commerce.price()),
-        quantity: faker.number.int({ min: 0, max: 100 }),
-      };
       const createSpy = jest.spyOn(service, 'create');
-      await sut.create(params);
+      await sut.create(params, response);
       expect(createSpy).toHaveBeenCalledWith(params);
     });
     it('should throw Parameter not found error if it is not passed', async () => {
-      const promise = sut.create({} as any);
-      await expect(promise).rejects.toThrow(new ParamNotFound());
+      await sut.create({} as any, response);
+      expect(response.status).toHaveBeenCalledWith(400);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Parameter not found',
+      });
     });
     it('should throw error received from service', async () => {
       jest.spyOn(service, 'create').mockRejectedValueOnce(new Error('Error'));
-
-      const promise = sut.create({} as any);
-      await expect(promise).rejects.toThrow();
+      await sut.create(params, response);
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Error',
+      });
+    });
+    it('should returns status 204', async () => {
+      jest.spyOn(service, 'create').mockResolvedValueOnce();
+      await sut.create(params, response);
+      expect(response.status).toHaveBeenCalledWith(204);
+      expect(response.send).toHaveBeenCalled();
     });
   });
   describe('List', () => {
@@ -117,33 +145,36 @@ describe('ProductController', () => {
       }));
     it('should call the list method of the service with correct parameter', async () => {
       const listSpy = jest.spyOn(service, 'list');
-      await sut.list(params);
+      await sut.list(response, params);
       expect(listSpy).toHaveBeenCalledWith(params);
     });
     it('should call the service without parameter', async () => {
       const listSpy = jest.spyOn(service, 'list');
-      await sut.list();
+      await sut.list(response);
       expect(listSpy).toHaveBeenCalledWith();
     });
     it('should throw error received from service', async () => {
       jest.spyOn(service, 'list').mockRejectedValueOnce(new Error('Error'));
-
-      const promise = sut.list({} as any);
-      await expect(promise).rejects.toThrow();
+      await sut.list(response, {} as any);
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Error',
+      });
     });
 
     it('should return a complete list of products if it does not receive parameters', async () => {
-      const response = {
+      const res = {
         item,
       };
-      jest.spyOn(service, 'list').mockResolvedValueOnce(response);
-      const output = await sut.list();
-      expect(output).toEqual(response);
+      jest.spyOn(service, 'list').mockResolvedValueOnce(res);
+      await sut.list(response);
+      expect(response.status).toHaveBeenCalledWith(200);
+      expect(response.send).toHaveBeenCalledWith(res);
     });
 
     it('should return a complete list of products with pagination', async () => {
       const total = faker.number.int({ min: 1, max: 100 });
-      const response = {
+      const res = {
         item,
         meta: {
           totalItems: total,
@@ -153,30 +184,37 @@ describe('ProductController', () => {
           currentPage: params.page,
         },
       };
-      jest.spyOn(service, 'list').mockResolvedValueOnce(response);
-      const output = await sut.list(params);
-      expect(output).toEqual(response);
+      jest.spyOn(service, 'list').mockResolvedValueOnce(res);
+      await sut.list(response, params);
+      expect(response.status).toHaveBeenCalledWith(200);
+      expect(response.send).toHaveBeenCalledWith(res);
     });
   });
   describe('Show', () => {
     const name: string = faker.commerce.productName();
     it('should call the show method of the service with correct parameter', async () => {
       const ShowSpy = jest.spyOn(service, 'show');
-      await sut.show(name);
+      await sut.show(name, response);
       expect(ShowSpy).toHaveBeenCalledWith(name);
     });
     it('should throw Parameter not found error if it is not passed', async () => {
-      const promise = sut.show('');
-      await expect(promise).rejects.toThrow(new ParamNotFound());
+      await sut.show('', response);
+      expect(response.status).toHaveBeenCalledWith(400);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Parameter not found',
+      });
     });
     it('should throw error received from service', async () => {
       jest.spyOn(service, 'show').mockRejectedValueOnce(new Error('Error'));
 
-      const promise = sut.show(name);
-      await expect(promise).rejects.toThrow();
+      await sut.show(name, response);
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Error',
+      });
     });
     it('should return a products', async () => {
-      const response = {
+      const resp = {
         item: [
           {
             name,
@@ -185,9 +223,10 @@ describe('ProductController', () => {
           },
         ],
       };
-      jest.spyOn(service, 'show').mockResolvedValueOnce(response);
-      const output = await sut.show(name);
-      expect(output).toEqual(response);
+      jest.spyOn(service, 'show').mockResolvedValueOnce(resp);
+      await sut.show(name, response);
+      expect(response.status).toHaveBeenCalledWith(200);
+      expect(response.send).toHaveBeenCalledWith(resp);
     });
   });
   describe('Update', () => {
@@ -198,19 +237,66 @@ describe('ProductController', () => {
     };
     it('should call the update method of the service with correct parameter', async () => {
       const updateSpy = jest.spyOn(service, 'update');
-      await sut.update(params.name, params);
+      await sut.update(params.name, params, response);
       expect(updateSpy).toHaveBeenCalledWith(params);
     });
     it('should throw Parameter not found error if name is not passed', async () => {
-      const promise = sut.update('', params);
-      await expect(promise).rejects.toThrow(new ParamNotFound());
+      await sut.update('', params, response);
+      expect(response.status).toHaveBeenCalledWith(400);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Parameter not found',
+      });
     });
     it('should throw Parameter not found error if params is not passed', async () => {
-      const promise = sut.update(params.name, {} as any);
-      await expect(promise).rejects.toThrow(new ParamNotFound());
+      await sut.update(params.name, {} as any, response);
+      expect(response.status).toHaveBeenCalledWith(400);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Parameter not found',
+      });
     });
     it('should throw error received from service', async () => {
       jest.spyOn(service, 'update').mockRejectedValueOnce(new Error('Error'));
+
+      await sut.update(params.name, params, response);
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Error',
+      });
+    });
+    it('should returns status 200', async () => {
+      jest.spyOn(service, 'update').mockResolvedValueOnce();
+      await sut.update(params.name, params, response);
+      expect(response.status).toHaveBeenCalledWith(200);
+      expect(response.send).toHaveBeenCalledWith();
+    });
+  });
+  describe('Delete', () => {
+    const name: string = 'keyboard';
+    it('should throw error received from service', async () => {
+      await sut.delete('', response);
+      expect(response.status).toHaveBeenCalledWith(400);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Parameter not found',
+      });
+    });
+    it('should call the delete method of the service with correct parameter', async () => {
+      const deleteSpy = jest.spyOn(service, 'delete');
+      await sut.delete(name, response);
+      expect(deleteSpy).toHaveBeenCalledWith(name);
+    });
+    it('should throw error received from service', async () => {
+      jest.spyOn(service, 'delete').mockRejectedValueOnce(new Error('Error'));
+      await sut.delete(name, response);
+      expect(response.status).toHaveBeenCalledWith(500);
+      expect(response.send).toHaveBeenCalledWith({
+        message: 'Error',
+      });
+    });
+    it('should returns status 200', async () => {
+      jest.spyOn(service, 'delete').mockResolvedValueOnce();
+      await sut.delete(name, response);
+      expect(response.status).toHaveBeenCalledWith(200);
+      expect(response.send).toHaveBeenCalledWith();
     });
   });
 });
